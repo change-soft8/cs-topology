@@ -1,28 +1,35 @@
 ;
+// 命名空间方法体
 (function() {
     // 拓扑工具方法
     var util = {
+    	// 返回div DOM 字符串
         div: function(dom, id, className) {
             var d = [];
+            // 添加div id属性
             d.push('<div id="')
             if (id) {
                 d.push(id);
             }
             d.push('"');
+            // 添加div class属性
             d.push(' class="')
             if (className) {
                 d.push(className);
             }
             d.push('">');
+            // 添加div 子节点
             if(dom) {
             	d.push(dom);
             }
             d.push('</div>');
             return d.join('');
         },
+        // 根据总数量，与每页数量，计算页数
         page: function(num, size) {
             var dif = num * 1.0 / size;
             var idif = parseInt(dif);
+            // 需要页数加1 的情况
             if (dif > idif) {
                 idif++;
             }
@@ -30,25 +37,29 @@
         }
     }
 
-    // 图片对象
+    // 图片DOM 处理对象
     var img = {
+    	// 图片单元DOM 字符串
     	box: function(className) {
     		return util.div(img.dom(className));
     	},
+    	// 单个图片DOM 字符串
     	dom: function(className) {
     		return util.div(null, null, 'cs-icon-bg ' + className);
     	}
     }
 
-    // 文本对象
+    // 文本DOM 处理对象
     var text = {
+    	// 返回文本DOM 字符串
     	dom: function(text, className) {
     		return util.div(text, null, 'cs-text ' + className);
     	}
     }
 
-    // 拓扑背景对象
+    // 拓扑背景DOM 操作对象
     var bg = {
+    	// 拓扑表格id计数标识
         num: 0,
         // 默认单元格宽度为80px
         tdWidth: 86,
@@ -60,28 +71,85 @@
         trs: 17,
         // 计算表格列数 
         columns: function(width) {
+        	// 如果存在容器宽度
             if (width) {
+            	// 根据单元个宽度，计数单元格个数
                 var dif = parseInt(width / bg.tdWidth);
+                // 如果单元格为奇数
                 if (dif % 2 !== 0) {
+                	// 将其变为偶数
                     dif--;
                 }
+                bg.trTds = dif;
+                // 返回计数后的单元格数量
                 return dif;
             }
+            // 返回默认单元格数量
             return bg.trTds;
         },
-        // 计算表格行数
-        rows: function() {
-
+        // 计算路由占据行数
+        routeRows: function(rs) {
+        	// 路由总个数
+            var rsl = rs.length;
+            // 计算路由放置行数
+            var p = util.page(rsl, bg.trTds);
+            // 计数路由占据行数
+            var r = 2 * p + 1;
+            return r;
+        },
+        // 计数绘制网络占用行数
+        networkRows: function(nws) {
+        	// 返回拓扑行数
+        	var r = 0;
+        	// 遍历拓扑网络数组
+        	for(var nw of nws) {
+        		// 一个临时数组
+        		var t = [];
+        		// 遍历子网对象
+        		for(var snw of nw.subNetworks) {
+        			// 数组连接子网设备
+        			t = t.concat(snw.devices || []);
+        		}
+        		// 设备本身占一行
+        		r++;
+        		// 存在网络设备，计数设备占用行数
+        		if(t.length > 0) {
+        			// 计数该网络下，所有设备占据的行数
+        			r += bg.routeRows(t);
+        		} else {
+        			// 没有设备，空隙占一行
+        			r ++;
+        		}
+        	}
+        	// 返回拓扑行数
+        	return r;
+        },
+        // 计算拓扑行数
+        rows: function(data) {
+        	// 如果存在数据
+        	if(data) {
+        		// 设置返回行数
+        		var trs = 0;
+        		// 计算路由占据行数
+        		trs += bg.routeRows(data.routers);
+        		// 计算网络占据行数
+        		trs += bg.networkRows(data.networks);
+        		// 返回拓扑行数
+        		return trs;
+        	}
+        	// 返回默认行数
             return bg.trs;
         },
         // 表格头部内容
         theadDom: function(columns, tid) {
             var t = [];
+            // 构建表格头部
             t.push('<thead>')
             var trid = tid + '-htr';
             t.push('<tr id="');
             t.push(trid);
             t.push('">');
+            // 构建头部单元格
             for (var c = 0; c < columns; c++) {
                 t.push('<td id="');
                 t.push(trid);
@@ -90,23 +158,28 @@
                 t.push('"></td>');
             }
             t.push('</tr></thead>');
+            // 返回头部DOM
             return t.join('');
         },
-        // 构建表格dom
+        // 构建拓扑背景网格
         dom: function(columns, rows, tid) {
             var t = [];
+            // 构建表格DOM
             t.push('<table cellspacing="0" cellpadding="0" border="0" width="100%" class="cs-topology-table" id="');
             t.push(tid);
             t.push('">');
             t.push(bg.theadDom(columns, tid));
+            // 构建tbody DOM
             t.push('<tbody>');
             for (var r = 0; r < rows; r++) {
                 var trid = tid + '-tr' + r;
+                // 构建带 id 的TR DOM
                 t.push('<tr id="');
                 t.push(trid);
                 t.push('">');
                 for (var c = 0; c < columns; c++) {
                     var tdid = trid + '-td' + c;
+                    // 构建带 id 的TD DOM
                     t.push('<td id="');
                     t.push(tdid);
                     t.push('"></td>');
@@ -114,22 +187,29 @@
                 t.push('</tr>')
             }
             t.push('</tbody></table>');
+            // 返回表格对象
             return t.join('');
         },
         // 构建背景表格
-        table: function(width) {
+        table: function(width, data) {
+        	// 计数表格列数
             var cs = bg.columns(width);
-            var rs = bg.rows();
-            // 累计
+            // 计数表格行数
+            var rs = bg.rows(data);
+            // 累计表格id标识
             bg.num++;
+            // 表格id 字符串
             var tid = 'cs-tp-tb' + bg.num;
+            // 构建表格DOM
             var dom = bg.dom(cs, rs, tid);
+            // 返回表格对象
             return { tid: tid, dom: dom };
         }
     };
 
     // 公网组件
     var pubNet = {
+    	// 添加公网图标
         append: function(tid) {
             $(tid).find('thead td:eq(' + bg.trTds / 2 + ')').html(img.box('cs-icon-pub-net'));
         }
@@ -139,6 +219,7 @@
     var router = {
         // 路由绑定属性
         attr: function(data) {
+        	// 映射路由属性
             return {
                 status: data.status,
                 uuid: data.uuid,
@@ -147,57 +228,88 @@
         },
         // 路由绑定方法
         method: function(ret) {
+        	// 映射路由操作
             return {
                 dom: router.dom.bind(ret)
             };
         },
+        // 构建路由id
         id: function(id) {
             return 'cs-route-' + id;
         },
-        // 将路由加载到拓扑
+        // 构建单个路由DOM 并添加到拓扑网格
         dom: function(ps) {
             var d = [];
+            // 路由图标组件
             d.push(img.dom('cs-icon-route'));
+            // 路由状态组件
             d.push(img.dom('cs-icon-ok'));
+            // 路由名称组件
             d.push(text.dom(this.attr.name, 'cs-text-route'));
+            // 将路由DOM 添加到拓扑网格
             $(ps).html(util.div(d.join(''), router.id(this.attr.uuid), 'cs-td-box'));
         },
+        // 构建一个路由对象
         build: function(data) {
             var ret = {};
+            // 构建路由属性
             ret.attr = router.attr(data);
+            // 构建路由操作
             ret.method = router.method(ret);
+            // 返回路由对象
             return ret;
         }
     };
 
     // 对象定位对象
     var position = {
-        row: 1,
+    	// 默认当前行号
+        curRow: 1,
+        // 定位初始化方法
         init: function() {
-            position.row = 1;
+        	// 新的拓扑，当前行归 1
+            position.curRow = 1;
         },
+        // 返回拓扑单元格对象
         sel: function(p, tid) {
+        	// 单元格对象【表格id + tr
             return $(tid + '-tr' + p[0] + '-td' + p[1]);
         },
+        // 获得路由对象拓扑单元格坐标
         route: function(rs) {
             var rsl = rs.length;
-            var column = 0;
+            var column;
             var ret = [];
             var p = util.page(rsl, bg.trTds);
-            for (var pi = 0; pi < p; pi++, position.row += 2) {
-                if (pi === p - 1) {
+            for (var pi = 0; pi < p; pi++) {
+            	column = 0;
+                if (pi > 0 && rsl % bg.trTds !== 0 && pi === p - 1) {
                     column = parseInt((bg.trTds - (rsl % bg.trTds)) / 2);
                 }
-                for (var i = 0; i < rsl; i++, column++) {
-                    ret.push([position.row, column]);
+                for (var i = 0; i < bg.trTds; i++, column++) {
+                	if(ret.length >= rsl) {
+                		break;
+                	}
+                    ret.push([position.curRow, column]);
                 }
+                position.curRow = position.curRow + 2
             }
             return ret;
+        },
+        // 获得网络对象拓扑单元格坐标
+        network: function(nws) {
+
         }
     };
 
     // 拓扑对象，组装其他组件
     var topology = {
+        // 新拓扑对象需初始化对象
+        init: function() {
+            // 初始化定位对象
+            position.init();
+        },
+        // 构建拓扑路由对象
         route: function(data, tid) {
             var rs = data.routers;
             if (!rs) {
@@ -213,10 +325,19 @@
                 ro.method.dom(sel);
             }
         },
-        // 新拓扑对象需初始化对象
-        init: function() {
-            // 初始化定位对象
-            position.init();
+        // 构建拓扑网络对象
+        network: function(data, tid) {
+        	// var nws = data.networks;
+        	// if(!nws)  {
+        	// 	return;
+        	// }
+        	// var ps = position.network(nws);
+        	// for(var i = 0; i < nws.length; i++) {
+        	// 	var nw = nws[i];
+        	// 	var p = ps[i];
+        	// 	var sel = position.sel(p, tid);
+        	// 	network.dom(sel, nw);
+        	// }
         },
         // 构建拓扑图
         build: function(data, tid) {
@@ -224,6 +345,8 @@
             topology.init();
             // 拓扑添加路由对象
             topology.route(data, tid);
+            // 拓扑添加网络对象
+            topology.network(data, tid);
         }
     };
 
@@ -231,7 +354,7 @@
         var s = $(this);
         var w = s.width();
         // 1.构建拓扑图背景表格
-        var t = bg.table(w);
+        var t = bg.table(w, data);
         // 表格id
         var tid = '#' + t.tid;
         // 表格dom
@@ -251,12 +374,12 @@
     css.push('.cs-topology-table td>div{width:100%;height:100%;position:relative;}');
     css.push('.cs-topology-table td .cs-td-box{border:1px solid #D5DEE2;margin:0 auto;width:88%;}');
     css.push('.cs-topology-table thead td{border-bottom:5px solid #59CBDB}');
-    css.push('.cs-icon-bg{position:absolute;top:0px;left:0px;background-image: url("data:image/png;base64,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")}');
+    css.push('.cs-icon-bg{position:absolute;top:0px;left:0px;background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGMAAACjCAMAAACpDVATAAAAA3NCSVQICAjb4U/gAAADAFBMVEUlJHb74ay23GWnS5EguabupSCOpq9ujJjX7++0t9Fef42azCeuuMXY76Z6enqnsbtFxbSO2+bixNuo00aRIHeG2c7b4OaP3dPu3uvY3eTxt0yNmaejQ42ttrbX2+DEgLLXr8/R29/////0wWXa8/Dq+Pr89/xZy9uEkaBdXZrP09ptbaOx5uD326aywsjN6pCZprc1NICmr67K0NautsC2vseRnar88+C2aqVjg5G8ydD1zYOaMoNzgpPSpMfv99xsipd3k5+u49vSncORn7Esvaqzvbzn6ez29/jwqy6JlaTv8vO0ZKN3hpZVyru/4HqVk7+hq7bp9M+a3+m4ttagzzPc3+T547qmuMD7686TprLq7/DQ4N/f5ujM29rj5+v/+/UtLHvy+OKg4dmFnqmOjrh9mKPK1dni9vOz2V7wrzjByM/y9PaZrrfS19/r1+fzvFr4+Pqvv8b52JY+PoZnZ6DdutVhzNuLjri0xMr658Wirr6apbGgPoq/4W/f77y6yM6Pnq/44LKXKn55ea58iprr8PLf4uimsr/f3+smu6jn7O+Woa7BztOsq83r6+9/gICt5d6/frGH2eXBwdh1kp67wsqeq7vA6+Zhgo+SobLz9vf2++6u1lCtWJqjpcfvpyR5iJid4NiOnK6rtsOiqajL1tq6w87k6uzb4+bbt9PS6qKj0Dnf9fJ1hpLxs0L4+vrV1eXt+fvyt02yusOlrrnHjblIxrXnzeH779+csbqSIni5cazb4+PF4oOwusaWmb/G0teqsrpEQ4qBm6cwvqy2xcvz8/NkZqL358Lk9/bu8POir7qSqbKos8Fkzt2/zNKVorNdzL6jtr7O2NydzSyJoqy1vsr0xG26utPj5+en49xnh5SpusKw11XX3+Nzc6hxjpqCj57n7++zvcnb7Ou/xs7O55k5OIMyMX7GzNPM0tjyuVH1xGLvqSiLl6W6223g5+qqsrKGk6Lw8fns9te36OKW39Xf8++S3Oe/33bm9/n6+/vP2d4xv62Vq7QLStibAAAACXBIWXMAAArrAAAK6wGCiw1aAAAAHHRFWHRTb2Z0d2FyZQBBZG9iZSBGaXJld29ya3MgQ1M26LyyjAAAABZ0RVh0Q3JlYXRpb24gVGltZQAxMS8xMS8xNgGkNusAAAqnSURBVGiB7Zt/dFNnGcfjVpiulYxZ40olbi9u7eJWw0KLMOrkLK6xWT2irmwn1iBDJmvIvAjoVrB00KSS1IpbE2j8QU0kzSws9IfsAGeVycBjTgeBQseRckcPMCkKVvxxoHfg87733pA29725TdM/5sn3nKb35/u5z/u87/M+73sTFZp8qVK6y+aq0rBYVS4zNxkMcxU7SiFHEsx4GZwLFzts8ZFyOV/EivfbZCnjZFhw/dhGH7O1wUFLuhjhEDwyI3EcKCGJ4ykwzFCSSfqUCejmNDCgntroZ8vo9aWc4WBZh9z5CBWimGGSqQxeZtoVShlhlnUluwYskXS8UkZIzhei2tjQBBgW6bsTn0TKJXQGYxmGBhlqwwGJY1mfEgY4TaLH0ximuKDUBgHEqgSBa0vCaxQGjkouWxh8bSYBSdqZiQpLGSLJ4ELxbZ2DSDGsDIGQlY0oY4TGRB8ba5O6TEo2icYhxYAmOMZghTWFJVFZEgwby4aVlzlW1kSbJRghiSpVLkdiy0pk+Fh2Agi4vSo5wyU7piVVOPERExlVLGUcUigljIlVVUoMcyEovzjWIJ0lwmFxKw0MR6muslI32CXuVxYKh5HJmRoDgm0CA4+wQ+XIWgmnDcBweAwcZhzWQZy55LGPLiGMk0fbqH4Yz+AsIRL/RvVAnuHJRx41efrK+sLu8nIObxUiruRqd/1boxg+IVbHNZw4hoMlwXZMKHCUXjAYPK3VMUapFqErBp5huMKgpvyxwcPnGMa5ZOxwjMGADcMSA5GjtMTtXnQJxRiDcLBYzTPmFCfeIFRJXO4oMnB+JjnU8XWFpBlqGgPhyMqWjWI4qGnHLcY6hHS4rpoQyhfqagiar6m+SfpOm5jzqcRdWn4WY1SWqueUYJ9fKS4RfW4qdxdfWUezhBEsUQk71Bhl8ogtRKsuNnuQo9o6p9gHh2EL3OtRD9HnBUK5hKEoeUpF/FCEGQqTp1TUhjMBFUmeJhZp5YTLVmEzFCZPqQgXrsLemDwzSA6hgvxx0ryBNczaVFKDfDoFxaukkpV0ysRWqcAd1GxKV4iHIWdh7AAeQyQv7KZDWFYlldiJMpSWcziIxA64DZQL3ckY1NOGejzGEobWY2BQZblaC2MgYzgMj34YWT3VsKFt8ugwQ6tNzY5C7S4nYXQPdpeUmzz15Z7BSmQvrUaOXUx1xSJ3qxO5r3Z7gFE9SAm/mCHjDwOMEPkcMJxXIavuLsZ11dWFusrXoSE3UwEPXlyC3HNwXVERhCHTroBhGvQAwzPodruhZGDklcPo0cq5h5z1cEXTLuIjQ2vpW5QySLuy0PsHMJBuVzUwSgwgLSmvvrKCK8yrMJMBUWTUa1ulMyG+f8j0c8xAi1pLkXYQ6kqnI+Wp17mRuiQfmXZBmLtQwjPc6MIVabeSfo401MkeYfjqwefuq8Xqikq0zm1HeaUeaNQe8EV9l7pCKzJQvkeyDBKvIFEvozCs1fizEm7mhtRdcFXTHDjiaUKHPdjDOnUXmGKAPytwyjxShghxNzyheVMSCeMHP1hNjsRxEHGaCc3OZGQjHVwlbCpaqhivTCx5eD6/ck0KxCQkhkKeWMamv7rMo/NEYok1+YozQh3XjhyZfr8SRFssvY3l7WY8MUjahu8/UgA6MpLsOrLULNbMrfkHXnphqyw+Wc61glc6OuBDtnyfBS9MWRPnHyCmjE2mHxZ0QH0VFCS9MH6pecx80EcW3ybIgMoYVeg419unF1zr6PiGfF0laJyMEeLzgj9PJgONTC8oeGV8iBTesRQUjPeODCPDyDAyjHQow8gwMowMI8P48DNGxijG4JzBmqg/WhPUKHk5u+XYjawbxx6SPjlz2ig9IjA4e41flNeejLJzTxavPd+TOj3tfLwV56fxjEhPXTRgdzGIsdgD0boc+TedO29kiXpbCjINF/1EowjhGdYaY0AjTt84TU6LN+Gda7z2ZN3SHkkGqa1vxTMi3pb++NmVr7/FK7OuvCUrXh+l2DHzkZGRb/9TZHA9xn4T54ubnTP90Rz6GvyxWPlbvgp/dDvO/ww+ZxKGvS7g4/L6+bku53DmRZCvx2hPvFfQl0XEXx6Cj/9S7MD+eOK3gh1cTTQPqscYcFqgPZn7/X47hzT6GqohUPBdz8LHs//BoE9RGLhFxexw+gNggTVg1PeDE6w9RqOWg/qr08jYsXnrlqzfbCXG0OzAivkj6CfV4tT7G6zImmN8pwcv/dmNQRoD+2Pz1s9u3cz7RIKR0D9q/KQNWfobzrVxffoGZwR3QUtLDY1B2tXmT26mtqvEft7iJyskjMtqZVDkkpNvX6aWFhoD3ZWkfyTGq7o6yYKiUSojWT8fq5gd4O6+CMQSi4VEK0bGDrRTtEQ6XiUyavw4OnFma47+EmcJBoJkcV7GH1hbjr0NcVfC39IMvl05+nuMDU7kCvj1JHLJtKtxS4U0/hwo1Ok3vgPujgT1LQH8dl2mf6TAYLxRKC7P7++JgBuaNAFjjxl6izd9C6UkXuX4UMRuL+OHpuGeSwxzzqhTsoKpmMHktATjg5OZYYLRQBrXe8l7Z29LML5IUzDqpb1KSJWBnN5oz61x0Hku6tWkr6bE3Kcpp04f0Ll8YVuZLkdvzClLJ0LMr0z2mrq6FqI6ry7Na++x/MrkvNCgj+obgk5TWo1AH95cNMPIMDKMDCPDyDD+zxlh/q1p3815vTv4TZn1j3jG3M65ShmWO8dK5msXcYy5z29/Xink6MKzx4uKigYO3rl8AP4/3dy8gf5O/BZjyazOy51/X6IIYV7WN1CENxrPbsD/NgzsOElfxyGM969ff/Ox69drO+/ev/+en+/f//tkjPm9iJ3qiDEivR+gvRuoaRlhrMhur23Pzn6/84u5uQte25h7exKE6WAI2YghPOPQgAWFlsn/BmtF+5naEyd4xsa1n16QjHHoJnzcN9UlMCw3d4ANe1+kGUIY/6it/WUtz9i4dv29a38lj7Atx9+miqx6UWDMH8CrCFUHZX/n9e/2dgwBxr61619bv+ANeUZRL/nHriwjDNfePmLByiIZxgMrsrOfAsjvOu/FiH37ktTV8sZhrPuOHyCMHcf7yH7jQTrjhf23ZRPI0u/fA4jc3NzbfyQ7qW2eKugoYRwQdxdSGS9sfPLjb4I+/1jtkrvfePwzoMc3XZSDLBS69tlGwniuWdhvpjLW71vwJNEXHkDovT8RrVbNlmHMF8qEhoUZlpvb+P1DcnZ87A+gX//kVfTM3Id/APrIJtWrMgzf3nlQ4raDzwnt6oNleH/eXtq3kog/HlSpVN85tXr3bXNnLL48ZcqUzk1yCAgl81ee7F2Fv77F90F2Ve/JlRuovy4k7QoYF0+tPvXTMy8vnrH4K9u3z/iXLALkCg2Tb04K8cpnDbnoMzzSP3ZfxIjZXzvz8GUMufxSMkRMAkNehPG5U4D4qwoYUzBk8buTwHhw9h9PzVYRBkD+9vqMyWCoZscxXt/eOQmM765Z897uNWu+eeald2c98+isWY8qZhy9g9YpxjJ4/XjFUytu+4Xi4pmqAwNTz267Y+rTjVXyX5CPYyxtzz7xdYUA38DJ5i+dnke697zTp88uG5D5YWx8XrL0E0oRyLIttbxkPAr3jZVMdf0P7rWVIoYafPIAAAAASUVORK5CYII=");}');
     css.push('.cs-icon-pub-net{background-position:0 0;width:100px;height:77px;bottom:0px;top:initial;}');
     css.push('.cs-icon-route{background-position:0 -93px;width:26px;height:26px;position:static;margin:8px auto 0;}');
     css.push('.cs-icon-ok{background-position:-50px -93px;width:16px;height:16px;top:4px;left:initial;right:2px;}');
     css.push('.cs-text{text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}');
-    css.push('.cs-text-route{position:static;width:76px;margin:1px auto 0;}');
+    css.push('.cs-text-route{position:static;width:76px;margin:3px auto 0;color:#666;font-family:"microsoft yahei";font-size: 13px;}');
     style1.innerHTML = css.join('\n');
     document.head.appendChild(style1);
 })();
