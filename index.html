@@ -1,0 +1,42 @@
+<html>
+	<head>
+		<title>网络拓扑jquery解决方案</title>
+		<script src="http://cdn.bootcss.com/jquery/3.1.1/jquery.min.js"></script>
+		<script src="cs-topology.js"></script>
+	</head>
+	<body>
+		<div id="topology"></div>
+		<style>
+			.cs-topology-table td {
+				width:80px;
+				height:60px;
+			}
+			.cs-topology-table thead td {
+				border-bottom: 5px solid #59CBDB;
+			}
+		</style>
+		<script type="text/javascript">
+			$('#topology').csTopology({
+				'routers': [{
+					status: 'OK',
+					uuid: 'route-fs823HF',
+					name: 'router',
+					pubIP: '',
+					subIP: 'subIP-sfhe876'
+				}, {
+					status: 'OK',
+					uuid: 'route-fyeruyfh092',
+					name: 'router02',
+					pubIP: true,
+					subIP: ''
+				}, {
+					status: 'OK',
+					uuid: 'route-uery83264',
+					name: 'router01',
+					pubIP: true,
+					subIP: 'subIP-uerit72364'
+				}]
+			});
+		</script>
+	</body>
+</html>
